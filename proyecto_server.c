@@ -5,15 +5,16 @@
  */
 
 #include "proyecto.h"
+#include "centro.h"
+
+Servidor servidor;
 
 int *
 obtener_tiempo_respuesta_1_svc(void *argp, struct svc_req *rqstp)
 {
 	static int  result;
-
-	/*
-	 * insert server code here
-	 */
+	printf("Entro a la llamada remota del tiempo de respuesta\n");
+	result = servidor.tiempo;
 
 	return &result;
 }
@@ -23,9 +24,17 @@ solicitar_envio_gasolina_1_svc(void *argp, struct svc_req *rqstp)
 {
 	static int  result;
 
-	/*
-	 * insert server code here
-	 */
+	printf("Entro a la llamada remota del envío de gasolina\n");	
+	if(servidor.inventario >= 38000){
+		result = 1;
+      servidor.inventario = servidor.inventario - 38000;
+//      escribirArchivoLog(nombreArchivoLog, "Suministro", parametros->servidor->tiempoSimulacion, 
+//                         parametros->servidor->inventario, nombreBomba, mensajeOk);
+   }else{
+		result = 0;
+//      escribirArchivoLog(nombreArchivoLog, "Suministro", parametros->servidor->tiempoSimulacion, 
+//                         parametros->servidor->inventario, nombreBomba, mensajeNoDisponible);
+   }
 
 	return &result;
 }
