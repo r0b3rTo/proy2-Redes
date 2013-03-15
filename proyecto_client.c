@@ -408,7 +408,7 @@ int predecirLlamadoCentro(Bomba* bomba, int minutoActual, int tiempoMinimoRespue
 
 
 void
-proy2_1(char *host, char *nombreArchivo)
+proy2_1(char *nombreArchivo, ListaServidor listaCentros)
 {
 	CLIENT *clnt;
 	int  *result_1;
@@ -416,32 +416,47 @@ proy2_1(char *host, char *nombreArchivo)
 	int  *result_2;
 	char *solicitar_envio_gasolina_1_arg;
 
-#ifndef	DEBUG
-	clnt = clnt_create (host, PROY2, PROYECTO2_1, "tcp");
-	if (clnt == NULL) {
-		clnt_pcreateerror (host);
-		exit (1);
-	}
-#endif	/* DEBUG */
+   ListaServidor indiceLista = (SERVIDOR*)malloc(sizeof(SERVIDOR)); 
+   if(indiceLista == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   indiceLista = listaCentros;
+   
+   while(indiceLista != NULL){
+      
+      #ifndef	DEBUG
+      clnt = clnt_create (indiceLista->direccion, PROY2, PROYECTO2_1, "tcp");
+      if (clnt == NULL) {
+         clnt_pcreateerror (indiceLista->direccion);
+         exit (1);
+      }
+      #endif	/* DEBUG */
 
-	result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
-	if (result_1 == (int *) NULL) {
-		clnt_perror (clnt, "call failed");
-	}
-	result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
-	if (result_2 == (int *) NULL) {
-		clnt_perror (clnt, "call failed");
-	}
-#ifndef	DEBUG
-	clnt_destroy (clnt);
-#endif	 /* DEBUG */
+      result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
+      if (result_1 == (int *) NULL) {
+         clnt_perror (clnt, "Conexión fallida al Centro");
+      } else {
+         indiceLista->tiempoRespuesta = *result_1;
+      }
+      
+      #ifndef	DEBUG
+      clnt_destroy (clnt);
+      #endif	 /* DEBUG */
+      
+      indiceLista = indiceLista->siguiente;
+   }
+   
+   result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
+   if (result_2 == (int *) NULL) {
+      clnt_perror (clnt, "call failed");
+   }
 }
 
 
 int
 main (int argc, char *argv[])
 {
-   char *host;
+
    Bomba bomba;
    FILE *archivoCentros, *archivoLog;
    ListaServidor listaCentros = NULL;
@@ -468,8 +483,8 @@ main (int argc, char *argv[])
    fclose(archivoLog);
    escribirArchivoLog(nombreArchivo,"Estado Inicial", 0, bomba.inventario, "", "");
    
-   host = bomba.nombreBomba;
-	proy2_1 (host,nombreArchivo,listaCentros);
+	proy2_1 (nombreArchivo,listaCentros);
+   
    exit (0);
    
 }
