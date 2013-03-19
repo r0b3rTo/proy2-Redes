@@ -516,6 +516,8 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          exit (1);
       }
       #endif	/* DEBUG */
+      
+      //Validación con MD5
 
       result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
       if (result_1 == (int *) NULL) {
@@ -553,6 +555,8 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   exit (1);
                }
                #endif   /* DEBUG */
+               
+               //Validación con MD5
          
                result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
                if (result_2 == (int *) NULL) {
