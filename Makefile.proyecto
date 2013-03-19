@@ -6,7 +6,7 @@
 CLIENT = bomba
 SERVER = centro
 
-SOURCES_CLNT.c = ListaServidor.c
+SOURCES_CLNT.c =  ListaServidor.c
 SOURCES_CLNT.h = bomba.h ListaServidor.h
 SOURCES_SVC.c =
 SOURCES_SVC.h = centro.h
@@ -25,6 +25,7 @@ OBJECTS_SVC = $(SOURCES_SVC.c:%.c=%.o) $(TARGETS_SVC.c:%.c=%.o)
 CFLAGS += -g 
 LDLIBS += -lnsl
 RPCGENFLAGS = 
+TFLAG = -pthread
 
 # Targets 
 
@@ -41,7 +42,7 @@ $(CLIENT) : $(OBJECTS_CLNT)
 	$(LINK.c) -o $(CLIENT) $(OBJECTS_CLNT) $(SOURCES.c) $(SOURCES.h) $(LDLIBS) 
 
 $(SERVER) : $(OBJECTS_SVC) 
-	$(LINK.c) -o $(SERVER) $(OBJECTS_SVC) $(SOURCES.c) $(SOURCES.h) $(LDLIBS)
+	$(LINK.c) -o $(SERVER) $(TFLAG) $(OBJECTS_SVC) $(SOURCES.c) $(SOURCES.h) $(LDLIBS)
 
  clean:
-	 $(RM) core $(TARGETS) $(OBJECTS_CLNT) $(OBJECTS_SVC) $(CLIENT) $(SERVER)
+	 $(RM) core $(CLIENT) $(SERVER) *.o *.c~ *.h~ *~

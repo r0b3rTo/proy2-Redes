@@ -1,17 +1,14 @@
 /**
    CI-4835 Redes de Computadoras
    Fecha: Enero 2013
-<<<<<<< HEAD
    Proyecto II
-=======
-   Proyecto I
->>>>>>> fea75a54ca169607af7d2922cef820df3ee66922
    Archivo: centro.h
    Includes y definición de estructuras para el Programa Servidor.
    Integrantes:
    Héctor López   05-38421
    Roberto Omaña  06-39990  
 **/
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -74,9 +71,6 @@ typedef struct parametros{
 
 pthread_mutex_t mutex_inventario;
 pthread_mutex_t mutex_tiempoRespuesta;
-<<<<<<< HEAD
 
 //Definición de variables globales
 extern Servidor servidor;
-=======
->>>>>>> fea75a54ca169607af7d2922cef820df3ee66922

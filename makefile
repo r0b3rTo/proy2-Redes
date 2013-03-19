@@ -45,4 +45,4 @@ $(SERVER) : $(OBJECTS_SVC)
 	$(LINK.c) -o $(SERVER) $(TFLAG) $(OBJECTS_SVC) $(SOURCES.c) $(SOURCES.h) $(LDLIBS)
 
  clean:
-	 $(RM) core *.o $(CLIENT) $(SERVER)
+	 $(RM) core $(CLIENT) $(SERVER) *.o *.c~ *.h~ *~
