@@ -406,15 +406,100 @@ int predecirLlamadoCentro(Bomba* bomba, int minutoActual, int tiempoMinimoRespue
    return minutoPrediccion;
 }
 
+/* gestionarEnvioGasolina
+ * Descripción: Función encargado de gestionar las solicitudes de gasolina
+ * a los distintos centros.
+ * Parámetro de entrada: 
+ * listaCentros: apuntador a la estructura de tipo ListaServidor que contiene
+ * los datos de los distintos centros de distribución.
+ * bomba: apuntador a la estructura Bomba.
+ * descriptorSocket: identificador del socket perteneciente a la Bomba.
+*/
+int gestionarEnvioGasolina(ListaServidor listaCentros, Bomba* bomba, int minutoActual, char* nombreArchivo){
+   
+   CLIENT *clnt;
+   int  *result_1;
+   char *obtener_tiempo_respuesta_1_arg;
+   int  *result_2;
+   char *solicitar_envio_gasolina_1_arg;
+   
+   int solicitudAceptada = 0;
+   char respuestaSolicitud[100];
+   int tiempoEsperaCarga;
+   
+   ListaServidor copiaListaCentros = (SERVIDOR*)malloc(sizeof(SERVIDOR));
+   if(copiaListaCentros == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   copiaListaCentros = listaCentros;
+      
+   while(copiaListaCentros != NULL){
+      
+      if(copiaListaCentros->tiempoRespuesta != -1){
+         
+         #ifndef  DEBUG
+         clnt = clnt_create (copiaListaCentros->direccion, PROY2, PROYECTO2_1, "tcp");
+         if (clnt == NULL) {
+            clnt_pcreateerror (copiaListaCentros->direccion);
+            exit (1);
+         }
+         #endif   /* DEBUG */
+         
+         result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
+         if (result_2 == (int *) NULL) {
+            clnt_perror (clnt, "call failed");
+         }
+         
+         if(*result_2 == 1){
+            strcpy(respuestaSolicitud,"Ok");
+         } else {
+            strcpy(respuestaSolicitud,"Negada");
+         }
+         
+         #ifndef  DEBUG
+         clnt_destroy (clnt);
+         #endif    /* DEBUG */
+         
+         escribirArchivoLog(nombreArchivo,"Peticion", minutoActual, 0, copiaListaCentros->nombre, respuestaSolicitud);
+         
+         if(strcmp(respuestaSolicitud,"Ok") == 0){
+            solicitudAceptada = 1;
+            tiempoEsperaCarga = copiaListaCentros->tiempoRespuesta;
+            break;
+         }
+         
+      }
+         
+      copiaListaCentros = copiaListaCentros->siguiente;
+   }
+   
+   //Al haber una solicitud aceptada, se espera y se recibe la carga.
+   if(solicitudAceptada){
+      usleep(tiempoEsperaCarga*100000);
+      recibirGasolina(bomba,CARGA_GANDOLA);
+      minutoActual = minutoActual + tiempoEsperaCarga;
+      escribirArchivoLog(nombreArchivo,"Llegada de la gandola", minutoActual, bomba->inventario, "", "");
+   }
+   
+   return minutoActual;
+}
+
 
 void
-proy2_1(char *nombreArchivo, ListaServidor listaCentros)
+proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
 {
 	CLIENT *clnt;
 	int  *result_1;
 	char *obtener_tiempo_respuesta_1_arg;
 	int  *result_2;
 	char *solicitar_envio_gasolina_1_arg;
+   
+   int minuto = 0, minutoSolicitudGasolina = 0;
+   int tiempoMinimoRespuesta = 0;
+   
+   int solicitudAceptada = 0;
+   char respuestaSolicitud[100];
+   int tiempoEsperaCarga;
 
    ListaServidor indiceLista = (SERVIDOR*)malloc(sizeof(SERVIDOR)); 
    if(indiceLista == NULL){
@@ -446,10 +531,78 @@ proy2_1(char *nombreArchivo, ListaServidor listaCentros)
       indiceLista = indiceLista->siguiente;
    }
    
-   result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
-   if (result_2 == (int *) NULL) {
-      clnt_perror (clnt, "call failed");
+   listaCentros = ordenarLista(listaCentros);
+   
+   tiempoMinimoRespuesta = listaCentros->tiempoRespuesta;
+   
+   while(minuto < 480){
+      minutoSolicitudGasolina = predecirLlamadoCentro(&bomba, minuto, tiempoMinimoRespuesta);
+      
+      if(minutoSolicitudGasolina <= minuto){
+         
+         indiceLista = listaCentros;
+         
+         while(indiceLista != NULL){
+            
+            if(indiceLista->tiempoRespuesta != -1){
+               
+               #ifndef  DEBUG
+               clnt = clnt_create (indiceLista->direccion, PROY2, PROYECTO2_1, "tcp");
+               if (clnt == NULL) {
+                  clnt_pcreateerror (indiceLista->direccion);
+                  exit (1);
+               }
+               #endif   /* DEBUG */
+         
+               result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
+               if (result_2 == (int *) NULL) {
+                  clnt_perror (clnt, "call failed");
+               }
+               
+               if(*result_2 == 1){
+                  strcpy(respuestaSolicitud,"Ok");
+               } else {
+                  strcpy(respuestaSolicitud,"Negada");
+               }
+               
+               #ifndef  DEBUG
+               clnt_destroy (clnt);
+               #endif    /* DEBUG */
+               
+               escribirArchivoLog(nombreArchivo,"Peticion", minuto, 0, indiceLista->nombre, respuestaSolicitud);
+               
+               if(strcmp(respuestaSolicitud,"Ok") == 0){
+                  solicitudAceptada = 1;
+                  tiempoEsperaCarga = indiceLista->tiempoRespuesta;
+                  break;
+               }
+            }
+            
+            indiceLista = indiceLista->siguiente;
+         }
+         
+         //Al haber una solicitud aceptada, se espera y se recibe la carga.
+         if(solicitudAceptada){
+            usleep(tiempoEsperaCarga*100000);
+            recibirGasolina(&bomba,CARGA_GANDOLA);
+            minuto = minuto + tiempoEsperaCarga;
+            escribirArchivoLog(nombreArchivo,"Llegada de la gandola", minuto, bomba.inventario, "", "");
+         }
+      }
+      
+      if(bomba.inventario == bomba.capacidadMaxima){
+         escribirArchivoLog(nombreArchivo,"Tanque full", minuto, 0, "", "");
+      }
+      
+      usleep(50*10000);
+      consumirGasolina(&bomba);
+      minuto = minuto + 5;
+      
+      if(bomba.inventario == 0){
+         escribirArchivoLog(nombreArchivo,"Tanque vacio", minuto, 0, "", "");
+      }
    }
+   
 }
 
 
@@ -483,8 +636,9 @@ main (int argc, char *argv[])
    fclose(archivoLog);
    escribirArchivoLog(nombreArchivo,"Estado Inicial", 0, bomba.inventario, "", "");
    
-	proy2_1 (nombreArchivo,listaCentros);
+	proy2_1 (bomba,nombreArchivo,listaCentros);
    
-   exit (0);
+   printf("*** Fin de la simulación ***\n");
+   exit(EXIT_SUCCESS);
    
 }
