@@ -488,11 +488,15 @@ int gestionarEnvioGasolina(ListaServidor listaCentros, Bomba* bomba, int minutoA
 void
 proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
 {
-	CLIENT *clnt;
-	int  *result_1;
-	char *obtener_tiempo_respuesta_1_arg;
-	int  *result_2;
-	char *solicitar_envio_gasolina_1_arg;
+   CLIENT *clnt;
+   int  *result_1;
+   char *obtener_tiempo_respuesta_1_arg;
+   int  *result_2;
+   char * solicitar_envio_gasolina_1_arg;
+   int  *result_3;
+   char *solicitar_reto_1_arg;
+   int  *result_4;
+   char * evaluar_respuesta_1_arg;
    
    int minuto = 0, minutoSolicitudGasolina = 0;
    int tiempoMinimoRespuesta = 0;
@@ -500,24 +504,78 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    int solicitudAceptada = 0;
    char respuestaSolicitud[100];
    int tiempoEsperaCarga;
+   
+   char bufferLectura[256];
+   char *tokenIgnorado, *clave;
+   
+   pid_t hijoId;
+   int status;
+   int pipeTiempoRespuesta[2], pipeSolicitarGasolina[2];
+   char* parametroMD5 = "-s";
+   
+   if((pipe(pipeTiempoRespuesta)) < 0){
+      errorFatal("Error: Creación de pipe para obtener tiempos de respuesta\n");
+   }
 
    ListaServidor indiceLista = (SERVIDOR*)malloc(sizeof(SERVIDOR)); 
    if(indiceLista == NULL){
-      terminar("Error de asignacion de memoria: " );
+      errorFatal("Error: Asignacion de memoria\n" );
    }
    indiceLista = listaCentros;
    
    while(indiceLista != NULL){
       
-      #ifndef	DEBUG
+      
       clnt = clnt_create (indiceLista->direccion, PROY2, PROYECTO2_1, "tcp");
       if (clnt == NULL) {
          clnt_pcreateerror (indiceLista->direccion);
-         exit (1);
+         indiceLista=indiceLista->siguiente;
+         continue;
       }
-      #endif	/* DEBUG */
       
       //Validación con MD5
+      
+      //Solicitar Reto
+      result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
+      if (result_3 == (int *) NULL) {
+         clnt_perror (clnt, "call failed");
+      }
+      
+      //Concatenar parametroMD5 y reto
+      //strcat(parametroMD5, bomba.nombreBomba);
+      
+      if((hijoId = fork()) < 0){
+         errorFatal("Error: Fork para MD5 en obtener tiempos de respuesta\n");
+      }
+         
+      if(hijoId == 0){
+         printf("Hola soy el hijo :)\n");
+         close(pipeTiempoRespuesta[0]);
+         if((dup2(1,pipeTiempoRespuesta[1])) < 0){
+            errorFatal("Error: dup en obtener tiempos de respuesta\n" );
+         }
+         
+         if(execlp("md5","md5", parametroMD5, NULL)){
+            errorFatal("Error: execlp en obtener tiempos de respuesta\n" );
+         }
+         
+         exit(0);
+      }
+        
+      if(hijoId > 0){
+         wait(&status);
+         close(pipeTiempoRespuesta[1]);
+         read(pipeTiempoRespuesta[0],bufferLectura,sizeof(bufferLectura));
+         tokenIgnorado = strtok(bufferLectura,"=");
+         clave = strtok(NULL,"=");
+         printf("Clave: %s\n", clave);
+      }
+      
+      //Evaluar reto
+      result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
+      if (result_4 == (int *) NULL) {
+         clnt_perror (clnt, "call failed");
+      }
 
       result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
       if (result_1 == (int *) NULL) {
@@ -557,7 +615,48 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                #endif   /* DEBUG */
                
                //Validación con MD5
-         
+               
+               memset(parametroMD5, 0, strlen(parametroMD5));
+               strcpy(parametroMD5, "-s");
+               
+               result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
+               if (result_3 == (int *) NULL) {
+                  clnt_perror (clnt, "call failed");
+               }
+               
+               //Concatenar parametroMD5 y reto
+               
+               if((hijoId = fork()) < 0){
+                  errorFatal("Error: Fork para MD5 en solicitar gasolina\n");
+               }
+               
+               if(hijoId == 0){
+                  close(pipeSolicitarGasolina[0]);
+                  if((dup2(1,pipeSolicitarGasolina[1])) < 0){
+                     errorFatal("Error: dup en solicitar gasolina\n" );
+                  }
+                  
+                  if(execlp("md5","md5", parametroMD5, NULL)){
+                     errorFatal("Error: execlp en solicitar gasolina\n" );
+                  }
+                  
+                  exit(0);
+               }
+               
+               if(hijoId > 0){
+                  wait(&status);
+                  close(pipeSolicitarGasolina[1]);
+                  read(pipeSolicitarGasolina[0],bufferLectura,sizeof(bufferLectura));
+                  tokenIgnorado = strtok(bufferLectura,"=");
+                  clave = strtok(NULL,"=");
+               }
+               
+               //Evaluar reto
+               result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
+               if (result_4 == (int *) NULL) {
+                  clnt_perror (clnt, "call failed");
+               }
+               
                result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
                if (result_2 == (int *) NULL) {
                   clnt_perror (clnt, "call failed");

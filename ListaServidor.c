@@ -1,7 +1,7 @@
 /**
    CI-4835 Redes de Computadoras
    Fecha: Enero 2013
-   Proyecto I
+   Proyecto II
    Archivo: ListaServidor.c
    Contiene funciones para el manejo de una lista enlazada de
    Servidores, con su nombre, direccion, puerto y tiempo de respuesta.

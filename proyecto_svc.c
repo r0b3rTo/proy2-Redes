@@ -19,53 +19,6 @@
 
 Servidor servidor;
 
-static void
-proy2_1(struct svc_req *rqstp, register SVCXPRT *transp)
-{
-	union {
-		int fill;
-	} argument;
-	char *result;
-	xdrproc_t _xdr_argument, _xdr_result;
-	char *(*local)(char *, struct svc_req *);
-
-	switch (rqstp->rq_proc) {
-	case NULLPROC:
-		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
-		return;
-
-	case OBTENER_TIEMPO_RESPUESTA:
-		_xdr_argument = (xdrproc_t) xdr_void;
-		_xdr_result = (xdrproc_t) xdr_int;
-		local = (char *(*)(char *, struct svc_req *)) obtener_tiempo_respuesta_1_svc;
-		break;
-
-	case SOLICITAR_ENVIO_GASOLINA:
-		_xdr_argument = (xdrproc_t) xdr_void;
-		_xdr_result = (xdrproc_t) xdr_int;
-		local = (char *(*)(char *, struct svc_req *)) solicitar_envio_gasolina_1_svc;
-		break;
-
-	default:
-		svcerr_noproc (transp);
-		return;
-	}
-	memset ((char *)&argument, 0, sizeof (argument));
-	if (!svc_getargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
-		svcerr_decode (transp);
-		return;
-	}
-	result = (*local)((char *)&argument, rqstp);
-	if (result != NULL && !svc_sendreply(transp, (xdrproc_t) _xdr_result, result)) {
-		svcerr_systemerr (transp);
-	}
-	if (!svc_freeargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
-		fprintf (stderr, "%s", "unable to free arguments");
-		exit (1);
-	}
-	return;
-}
-
 /* verificacionNombreCentro
  * Descripción: Procedimiento encargado de la verificación del valor del 
  * modificador -n.
@@ -428,6 +381,66 @@ void * actualizarSimulacion(void *argumento){
 }
 
 
+static void
+proy2_1(struct svc_req *rqstp, register SVCXPRT *transp)
+{
+	union {
+		char *solicitar_envio_gasolina_1_arg;
+		char *evaluar_respuesta_1_arg;
+	} argument;
+	char *result;
+	xdrproc_t _xdr_argument, _xdr_result;
+	char *(*local)(char *, struct svc_req *);
+
+	switch (rqstp->rq_proc) {
+	case NULLPROC:
+		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
+		return;
+
+	case OBTENER_TIEMPO_RESPUESTA:
+		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_result = (xdrproc_t) xdr_int;
+		local = (char *(*)(char *, struct svc_req *)) obtener_tiempo_respuesta_1_svc;
+		break;
+
+	case SOLICITAR_ENVIO_GASOLINA:
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
+		_xdr_result = (xdrproc_t) xdr_int;
+		local = (char *(*)(char *, struct svc_req *)) solicitar_envio_gasolina_1_svc;
+		break;
+
+	case SOLICITAR_RETO:
+		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_result = (xdrproc_t) xdr_int;
+		local = (char *(*)(char *, struct svc_req *)) solicitar_reto_1_svc;
+		break;
+
+	case EVALUAR_RESPUESTA:
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
+		_xdr_result = (xdrproc_t) xdr_int;
+		local = (char *(*)(char *, struct svc_req *)) evaluar_respuesta_1_svc;
+		break;
+
+	default:
+		svcerr_noproc (transp);
+		return;
+	}
+	memset ((char *)&argument, 0, sizeof (argument));
+	if (!svc_getargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
+		svcerr_decode (transp);
+		return;
+	}
+	result = (*local)((char *)&argument, rqstp);
+	if (result != NULL && !svc_sendreply(transp, (xdrproc_t) _xdr_result, result)) {
+		svcerr_systemerr (transp);
+	}
+	if (!svc_freeargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
+		fprintf (stderr, "%s", "unable to free arguments");
+		exit (1);
+	}
+	return;
+}
+
 int
 main (int argc, char **argv)
 {
@@ -455,7 +468,7 @@ main (int argc, char **argv)
 		exit(1);
 	}
 	
-   pthread_t hiloActualizador;    
+	pthread_t hiloActualizador;    
    
    inicializarServidor(&servidor);
    manejarParametros(argc, argv, &servidor);

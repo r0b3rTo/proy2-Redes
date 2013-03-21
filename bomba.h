@@ -1,7 +1,7 @@
 /**
    CI-4835 Redes de Computadoras
    Fecha: Enero 2013
-   Proyecto I
+   Proyecto II
    Archivo: bomba.h
    Includes y definición de estructuras para el Programa bomba.
    Integrantes:

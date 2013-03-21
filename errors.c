@@ -1,7 +1,7 @@
 /**
    CI-4835 Redes de Computadoras
    Fecha: Enero 2013
-   Proyecto I
+   Proyecto II
    Archivo: errors.c
    Contiene funciones para el manejo de errores de los programas bomba y centro.
    Integrantes:

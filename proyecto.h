@@ -22,8 +22,14 @@ extern "C" {
 extern  int * obtener_tiempo_respuesta_1(void *, CLIENT *);
 extern  int * obtener_tiempo_respuesta_1_svc(void *, struct svc_req *);
 #define SOLICITAR_ENVIO_GASOLINA 2
-extern  int * solicitar_envio_gasolina_1(void *, CLIENT *);
-extern  int * solicitar_envio_gasolina_1_svc(void *, struct svc_req *);
+extern  int * solicitar_envio_gasolina_1(char **, CLIENT *);
+extern  int * solicitar_envio_gasolina_1_svc(char **, struct svc_req *);
+#define SOLICITAR_RETO 3
+extern  int * solicitar_reto_1(void *, CLIENT *);
+extern  int * solicitar_reto_1_svc(void *, struct svc_req *);
+#define EVALUAR_RESPUESTA 4
+extern  int * evaluar_respuesta_1(char **, CLIENT *);
+extern  int * evaluar_respuesta_1_svc(char **, struct svc_req *);
 extern int proy2_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
@@ -33,6 +39,12 @@ extern  int * obtener_tiempo_respuesta_1_svc();
 #define SOLICITAR_ENVIO_GASOLINA 2
 extern  int * solicitar_envio_gasolina_1();
 extern  int * solicitar_envio_gasolina_1_svc();
+#define SOLICITAR_RETO 3
+extern  int * solicitar_reto_1();
+extern  int * solicitar_reto_1_svc();
+#define EVALUAR_RESPUESTA 4
+extern  int * evaluar_respuesta_1();
+extern  int * evaluar_respuesta_1_svc();
 extern int proy2_1_freeresult ();
 #endif /* K&R C */
 

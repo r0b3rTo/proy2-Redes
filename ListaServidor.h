@@ -1,7 +1,7 @@
 /**
    CI-4835 Redes de Computadoras
    Fecha: Enero 2013
-   Proyecto I
+   Proyecto II
    Archivo: ListaServidor.h
    Contiene la estructura de la ListaServidor, y cada uno de sus elementos.
    Integrantes:

@@ -1,7 +1,7 @@
 /**
    CI-4835 Redes de Computadoras
    Fecha: Enero 2013
-   Proyecto I
+   Proyecto II
    Archivo: errors.h
    Contiene la definición de los diferentes elementos para el manejo de errores de los programas
    bomba y centro.
@@ -22,7 +22,7 @@ extern char *program_invocation_short_name;
 
 extern void errorFatal(char *mensaje);
 extern void mensajeError(char *mensaje);
-extern void terminar(char*mensaje); 
+extern void terminar(char *mensaje); 
 
 #endif
 
