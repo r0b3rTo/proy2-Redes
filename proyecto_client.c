@@ -477,7 +477,6 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
       }
          
       if(hijoId == 0){
-         printf("Hola soy el hijo :)\n");
          close(pipeTiempoRespuesta[0]);
          if((dup2(1,pipeTiempoRespuesta[1])) < 0){
             errorFatal("Error: dup en obtener tiempos de respuesta\n" );
@@ -576,7 +575,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   
                   //Concatenar parametroMD5 y reto
                   memset(parametroMD5, 0, strlen(parametroMD5));
-                  strcpy(parametroMD5, "-s");
+                  strcpy(parametroMD5, parametro);
                   
                   strcat(parametroMD5,reto);
                   
@@ -604,34 +603,38 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                      tokenIgnorado = strtok(bufferLectura,"=");
                      clave = strtok(NULL,"=");
                   }
+                  
+                  strcpy(evaluar_respuesta_1_arg, clave);
+                  
+                  //Evaluar reto
+                  result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
+                  if (result_4 == (int *) NULL) {
+                     //escribirArchivoLog
+                     clnt_perror (clnt, "Error: Fallo en la evaluación del desafio");
+                     indiceLista=indiceLista->siguiente;
+                     continue;
+                  }
+                  
+                  if(*result_4 == 1){
+                     //escribirArchivoLog
+                  } else{
+                     //escribirArchivoLog
+                     indiceLista=indiceLista->siguiente;
+                     continue;
+                  }
+                  
+                  result_2 = solicitar_envio_gasolina_1(&solicitar_envio_gasolina_1_arg, clnt);
+                  if (result_2 == (int *) NULL) {
+                     clnt_perror (clnt, "Error en la solicitud de gasolina");
+                     indiceLista=indiceLista->siguiente;
+                     continue;
+                  }
                }
-               
-               
-               
-               strcpy(evaluar_respuesta_1_arg, clave);
-               
-               //Evaluar reto
-               result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
-               if (result_4 == (int *) NULL) {
-                  //escribirArchivoLog
-                  clnt_perror (clnt, "Error: Fallo en la evaluación del desafio");
-                  indiceLista=indiceLista->siguiente;
-                  continue;
-               }
-               
-               if(*result_4 == 1){
-                  //escribirArchivoLog
-               } else{
-                  //escribirArchivoLog
-                  indiceLista=indiceLista->siguiente;
-                  continue;
-               }
-               
                
                if(*result_2 == 1){
                   strcpy(respuestaSolicitud,"Ok");
                } else {
-                  strcpy(respuestaSolicitud,"Negada");
+                  strcpy(respuestaSolicitud,"No Disponible");
                }
                
                clnt_destroy (clnt);
@@ -706,6 +709,6 @@ main (int argc, char *argv[])
 	proy2_1 (bomba,nombreArchivo,listaCentros);
    
    printf("*** Fin de la simulación ***\n");
-   exit(EXIT_SUCCESS);
+   exit(0);
    
 }
