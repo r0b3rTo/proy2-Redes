@@ -243,7 +243,7 @@ void imprimirServidor(Servidor servidor){
  * nombreCentro: apuntador a una cadena de caracteres que representa el nombre 
  * del Centro de Distribución.
 */
-char * obtenerNombreArchivoLog(char * nombreCentro){
+char* obtenerNombreArchivoLog(char * nombreCentro){
    char* nombreArchivo = (char*)malloc(sizeof(char)*100);
    if(nombreArchivo == NULL){
       terminar("Error de asignacion de memoria");
@@ -333,7 +333,32 @@ void escribirArchivoLog(char* nombreArchivoLog, char* mensaje, int tiempoActual,
       strcat(nuevaEntrada, ", ");
       sprintf(bufferInventario, "%d", inventario);
       strcat(nuevaEntrada, bufferInventario);
+   }else if(strcmp(mensaje, "Verificacion de Estado del Ticket") == 0){
+      strcat(nuevaEntrada, "Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, nombreBomba);
+      strcat(nuevaEntrada, ", Ticket ");
+      strcat(nuevaEntrada, resultadoPeticion);  
+   }else if(strcmp(mensaje, "Nuevo Ticket") == 0){
+      strcat(nuevaEntrada, "Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, nombreBomba);
+      strcat(nuevaEntrada, ", Ticket ");
+      strcat(nuevaEntrada, resultadoPeticion);  
+   }else if(strcmp(mensaje, "Autenticacion") == 0){
+      strcat(nuevaEntrada, " Bomba: ");
+      strcat(nuevaEntrada, nombreBomba);  
+      strcat(nuevaEntrada, " Autenticación");      
+      strcat(nuevaEntrada, resultadoPeticion);       
+      strcat(nuevaEntrada, ". Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);      
+      strcat(nuevaEntrada, bufferTiempo);            
    }
+   
    strcat(nuevaEntrada,"\n");
       
    if(fwrite(nuevaEntrada, sizeof(char), strlen(nuevaEntrada), archivoLog) < strlen(nuevaEntrada)){
@@ -387,6 +412,7 @@ proy2_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
 		char *solicitar_envio_gasolina_1_arg;
+      char *solicitar_reto_1_arg;
 		char *evaluar_respuesta_1_arg;
 	} argument;
 	char *result;

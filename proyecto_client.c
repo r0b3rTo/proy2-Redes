@@ -427,16 +427,40 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    char respuestaSolicitud[100];
    int tiempoEsperaCarga;
    
-   char bufferLectura[256];
-   char *tokenIgnorado, *clave, *reto;
-   
    pid_t hijoId;
    int status;
+   
+   char bufferLectura[256];
+   char *parametro = "-s";
+   
+   char* tokenIgnorado = (char*)malloc(sizeof(char)*100);
+   if(tokenIgnorado == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   
+   char* clave = (char*)malloc(sizeof(char)*100);
+   if(clave == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   
+   char* reto = (char*)malloc(sizeof(char)*100);
+   if(reto == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   
+   char* parametroMD5 = (char*)malloc(sizeof(char)*100);
+   if(parametroMD5 == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   
    int pipeTiempoRespuesta[2], pipeSolicitarGasolina[2];
-   char *parametro = "-s", *parametroMD5;
    
    if((pipe(pipeTiempoRespuesta)) < 0){
       errorFatal("Error: Creación de pipe para obtener tiempos de respuesta\n");
+   }
+   
+   if((pipe(pipeSolicitarGasolina)) < 0){
+      errorFatal("Error: Creación de pipe para solicitud de gasolina\n");
    }
 
    ListaServidor indiceLista = (SERVIDOR*)malloc(sizeof(SERVIDOR)); 
@@ -464,11 +488,10 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          indiceLista=indiceLista->siguiente;
          continue;
       }
-         
+      
       sprintf(reto,"%d",*result_3);
       
       //Concatenar parametroMD5 y reto
-      memset(parametroMD5, 0, strlen(parametroMD5));
       strcpy(parametroMD5, parametro);
       strcat(parametroMD5,reto);
       
@@ -477,8 +500,9 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
       }
          
       if(hijoId == 0){
+         close(1);
          close(pipeTiempoRespuesta[0]);
-         if((dup2(1,pipeTiempoRespuesta[1])) < 0){
+         if(dup(pipeTiempoRespuesta[1]) < 0){
             errorFatal("Error: dup en obtener tiempos de respuesta\n" );
          }
          
@@ -498,13 +522,11 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          printf("Clave: %s\n", clave);
       }
       
-      strcpy(evaluar_respuesta_1_arg, clave);
-      
       //Evaluar reto
-      result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
+      result_4 = evaluar_respuesta_1(&clave, clnt);
       if (result_4 == (int *) NULL) {
          //escribirArchivoLog
-         clnt_perror (clnt, "Error: Fallo en la evaluación del desafio");
+         clnt_perror (clnt, "Error en la evaluación del desafio");
          indiceLista=indiceLista->siguiente;
          continue;
       }
@@ -520,7 +542,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
       result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
       if (result_1 == (int *) NULL) {
          //escribirArchivoLog
-         clnt_perror (clnt, "Error: Conexión fallida al Centro");
+         clnt_perror (clnt, "Error en obtener tiempo respuesta");
          indiceLista=indiceLista->siguiente;
          continue;
       } else {
@@ -574,7 +596,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   sprintf(reto,"%d",*result_3);
                   
                   //Concatenar parametroMD5 y reto
-                  memset(parametroMD5, 0, strlen(parametroMD5));
+//                   memset(parametroMD5, 0, strlen(parametroMD5));
                   strcpy(parametroMD5, parametro);
                   
                   strcat(parametroMD5,reto);
@@ -584,8 +606,9 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   }
                
                   if(hijoId == 0){
+                     close(1);
                      close(pipeSolicitarGasolina[0]);
-                     if((dup2(1,pipeSolicitarGasolina[1])) < 0){
+                     if(dup(pipeSolicitarGasolina[1]) < 0){
                         errorFatal("Error: dup en solicitar gasolina\n" );
                      }
                      
@@ -657,6 +680,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
             recibirGasolina(&bomba,CARGA_GANDOLA);
             minuto = minuto + tiempoEsperaCarga;
             escribirArchivoLog(nombreArchivo,"Llegada de la gandola", minuto, bomba.inventario, "", "");
+            solicitudAceptada = 0;
          }
       }
       

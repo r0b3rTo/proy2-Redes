@@ -34,10 +34,14 @@ HistorialTicket insertarTicket(HistorialTicket historialTickets, char* nombreBom
      if(auxDireccionIP == NULL){
           terminar("Error de asignacion de memoria: " );
      }
-     char* auxClaveMD5 = claveMD5;
+     char* auxClaveMD5 = (char*)malloc(sizeof(char)*100);
+     if(auxClaveMD5 == NULL){
+          terminar("Error de asignacion de memoria: " );
+     } 
      int auxTiempoValidacion = tiempoValidacion;
      strcpy(auxNombreBomba,nombreBomba);
      strcpy(auxDireccionIP,direccionIP);
+     strcpy(auxClaveMD5,claveMD5);
      nuevoTicket =(TICKET*)malloc(sizeof(TICKET));
      if(nuevoTicket == NULL){
           terminar("Error de asignacion de memoria: " );
@@ -95,7 +99,7 @@ HistorialTicket insertarTiempoValidacion(HistorialTicket historialTickets, char*
 */
 HistorialTicket buscarTicket(HistorialTicket historialTickets, char* direccionIP){
    
-   HistorialTicket ticketBuscado;
+   HistorialTicket ticketBuscado = NULL;
    HistorialTicket copiaHistorialTickets;
    copiaHistorialTickets=(TICKET*)malloc(sizeof(TICKET));
    if(copiaHistorialTickets == NULL){
