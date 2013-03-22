@@ -13,11 +13,11 @@ HistorialTicket tickets;
 int *
 obtener_tiempo_respuesta_1_svc(void *argp, struct svc_req *rqstp)
 {
-   static int  result;
-   printf("Entro a la llamada remota del tiempo de respuesta\n");
-   result = servidor.tiempo;
+	static int  result;
+	printf("Entro a la llamada remota del tiempo de respuesta\n");		//Flag innecesario
+	result = servidor.tiempo;
 
-   return &result;
+	return &result;
 }
 
 int *
@@ -110,7 +110,7 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
    }
    
    tickets = insertarTicket(tickets, *argp, ip, claveMD5, -1);
-   //escribirArchivoLog
+   //escribirArchivoLog		CASO Se incluye un nuevo ticket
 
    return &result;
 }
@@ -130,11 +130,11 @@ evaluar_respuesta_1_svc(char **argp, struct svc_req *rqstp)
    if(ticketBomba != NULL){
       //Verificación de correspondencia de claves
       if(strcmp(ticketBomba->claveMD5,*argp) == 0){
-         //escribirArchivoLog
+         //escribirArchivoLog		CASO Autenticación exitosa
          ticketBomba->tiempoValidacion = servidor.tiempoSimulacion;
          result = 1;
       }else{
-         //escribirArchivoLog
+         //escribirArchivoLog		CASO Autenticación fallida
          result = 0;
       }
    }else{

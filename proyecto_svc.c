@@ -354,7 +354,7 @@ void escribirArchivoLog(char* nombreArchivoLog, char* mensaje, int tiempoActual,
 */
 void * actualizarSimulacion(void *argumento){
    Servidor * servidor = (Servidor *) (argumento);
-   
+
    char * nombreArchivoLog = obtenerNombreArchivoLog(servidor->nombreCentro);
    escribirArchivoLog(nombreArchivoLog, "Estado Inicial", 0, servidor->inventario, servidor->nombreCentro, "");
 
@@ -376,8 +376,9 @@ void * actualizarSimulacion(void *argumento){
       servidor->tiempoSimulacion = servidor->tiempoSimulacion + 1;
    }
 
-   //Termina   
-   pthread_exit(0);
+	//Termina   
+	printf("*** Fin de la simulación ***\n");
+	exit(0);
 }
 
 
@@ -441,6 +442,7 @@ proy2_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	return;
 }
 
+
 int
 main (int argc, char **argv)
 {
@@ -467,9 +469,9 @@ main (int argc, char **argv)
 		fprintf (stderr, "%s", "unable to register (PROY2, PROYECTO2_1, tcp).");
 		exit(1);
 	}
-	
-	pthread_t hiloActualizador;    
-   
+
+	pthread_t hiloActualizador;
+
    inicializarServidor(&servidor);
    manejarParametros(argc, argv, &servidor);
    crearLog(servidor.nombreCentro);
