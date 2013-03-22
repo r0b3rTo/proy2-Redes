@@ -457,7 +457,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
       //Validación con MD5
       
       //Solicitar Reto
-      result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
+      result_3 = solicitar_reto_1(&solicitar_reto_1_arg, clnt);
       if (result_3 == (int *) NULL) {
          //escribirArchivoLog
          clnt_perror (clnt, "Error en la solicitud del reto");
@@ -557,7 +557,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                }
                
                //Solicitar Reto
-               result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
+               result_3 = solicitar_reto_1(&solicitar_reto_1_arg, clnt);
                if (result_3 == (int *) NULL) {
                   //escribirArchivoLog
                   clnt_perror (clnt, "Error en la solicitud del reto");
@@ -598,6 +598,8 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   clave = strtok(NULL,"=");
                }
                
+               strcpy(evaluar_respuesta_1_arg, clave);
+               
                //Evaluar reto
                result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
                if (result_4 == (int *) NULL) {
@@ -615,7 +617,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   continue;
                }
                
-               result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
+               result_2 = solicitar_envio_gasolina_1(&solicitar_envio_gasolina_1_arg, clnt);
                if (result_2 == (int *) NULL) {
                   clnt_perror (clnt, "call failed");
                }

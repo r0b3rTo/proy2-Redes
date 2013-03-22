@@ -8,6 +8,7 @@
 #include "centro.h"
 
 Servidor servidor;
+HistorialTicket tickets;
 
 int *
 obtener_tiempo_respuesta_1_svc(void *argp, struct svc_req *rqstp)
@@ -41,25 +42,68 @@ solicitar_envio_gasolina_1_svc(char **argp, struct svc_req *rqstp)
 }
 
 int *
-solicitar_reto_1_svc(void *argp, struct svc_req *rqstp)
+solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
 {
-	static int  result;
+   static int  result;
+   char *ip, *reto;
+   
+   int pipeMD5[2];
+   char bufferLectura[256];
+   char *tokenIgnorado, *claveMD5;
+   char* parametroMD5 = "-s";
+   
+   pid_t hijoId;
+   int status;
+   
+   srand(time(NULL));
+   result = rand();
+   
+   sprintf(reto,"%d",result);
+   strcpy(ip,inet_ntoa(rqstp->rq_xprt->xp_raddr.sin_addr));
+     
+   strcat(parametroMD5,reto);
+   
+   if((hijoId = fork()) < 0){
+      errorFatal("Error: Fork para MD5 en obtener tiempos de respuesta\n");
+   }
+      
+   if(hijoId == 0){
+      printf("Hola soy el hijo :)\n");
+      close(pipeMD5[0]);
+      if((dup2(1,pipeMD5[1])) < 0){
+         errorFatal("Error: dup en obtener tiempos de respuesta\n" );
+      }
+      
+      if(execlp("md5","md5", parametroMD5, NULL)){
+         errorFatal("Error: execlp en obtener tiempos de respuesta\n" );
+      }
+       
+      exit(0);
+   }
+      
+   if(hijoId > 0){
+      wait(&status);
+      close(pipeMD5[1]);
+      read(pipeMD5[0],bufferLectura,sizeof(bufferLectura));
+      tokenIgnorado = strtok(bufferLectura,"=");
+      claveMD5 = strtok(NULL,"=");
+      printf("Clave: %s\n", claveMD5);
+   }
+   
+   tickets = insertarTicket(tickets, *argp, ip, claveMD5, -1);
 
-	/*
-	 * insert server code here
-	 */
 
-	return &result;
+   return &result;
 }
 
 int *
 evaluar_respuesta_1_svc(char **argp, struct svc_req *rqstp)
 {
-	static int  result;
+   static int  result;
 
 	/*
 	 * insert server code here
 	 */
 
-	return &result;
+   return &result;
 }

@@ -410,7 +410,7 @@ proy2_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		break;
 
 	case SOLICITAR_RETO:
-		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_int;
 		local = (char *(*)(char *, struct svc_req *)) solicitar_reto_1_svc;
 		break;
