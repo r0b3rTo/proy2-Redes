@@ -93,21 +93,22 @@ HistorialTicket insertarTiempoValidacion(HistorialTicket historialTickets, char*
 *    Busca en la lista y compara el nombre de cada Servidor, hasta encontrarlo
 *    o se recorra toda  la lista.
 */
-HistorialTicket buscarTicket(HistorialTicket historialTickets, char* nombreBomba){
-   HistorialTicket ticketBuscado = NULL;
-   while(historialTickets != NULL){
-      if (strcmp(historialTickets->nombreBomba,nombreBomba) != 0){
-          historialTickets = historialTickets->siguiente;
+HistorialTicket buscarTicket(HistorialTicket historialTickets, char* direccionIP){
+   
+   HistorialTicket ticketBuscado;
+   HistorialTicket copiaHistorialTickets;
+   copiaHistorialTickets=(TICKET*)malloc(sizeof(TICKET));
+   if(copiaHistorialTickets == NULL){
+      terminar("Error de asignacion de memoria: " );
+   }
+   copiaHistorialTickets = historialTickets;
+   
+   while(copiaHistorialTickets != NULL){
+      if (strcmp(copiaHistorialTickets->direccionIP,direccionIP) != 0){
+          copiaHistorialTickets = copiaHistorialTickets->siguiente;
       } else {
-          ticketBuscado = (TICKET*)malloc(sizeof(TICKET));
-          if(ticketBuscado == NULL){
-               terminar("Error de asignacion de memoria: " );
-          }
-          ticketBuscado->nombreBomba = historialTickets->nombreBomba;   
-          ticketBuscado->direccionIP = historialTickets->direccionIP;
-          ticketBuscado->claveMD5 = historialTickets->claveMD5;
-          ticketBuscado->tiempoValidacion = historialTickets->tiempoValidacion;
-          return ticketBuscado;
+         ticketBuscado = copiaHistorialTickets;
+         return ticketBuscado;
       } 
    }
    return ticketBuscado;

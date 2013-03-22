@@ -433,7 +433,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    pid_t hijoId;
    int status;
    int pipeTiempoRespuesta[2], pipeSolicitarGasolina[2];
-   char* parametroMD5 = "-s";
+   char* parametro = "-s", parametroMD5;
    
    if((pipe(pipeTiempoRespuesta)) < 0){
       errorFatal("Error: Creación de pipe para obtener tiempos de respuesta\n");
@@ -469,8 +469,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
       
       //Concatenar parametroMD5 y reto
       memset(parametroMD5, 0, strlen(parametroMD5));
-      strcpy(parametroMD5, "-s");
-      
+      strcpy(parametroMD5, parametro);
       strcat(parametroMD5,reto);
       
       if((hijoId = fork()) < 0){
@@ -511,7 +510,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          continue;
       }
       
-      if(*result_4 == 0){
+      if(*result_4 == 1){
          //escribirArchivoLog
       } else{
          //escribirArchivoLog
@@ -556,47 +555,58 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   exit (1);
                }
                
-               //Solicitar Reto
-               result_3 = solicitar_reto_1(&solicitar_reto_1_arg, clnt);
-               if (result_3 == (int *) NULL) {
-                  //escribirArchivoLog
-                  clnt_perror (clnt, "Error en la solicitud del reto");
+               result_2 = solicitar_envio_gasolina_1(&solicitar_envio_gasolina_1_arg, clnt);
+               if (result_2 == (int *) NULL) {
+                  clnt_perror (clnt, "Error en la solicitud de gasolina");
                   indiceLista=indiceLista->siguiente;
                   continue;
                }
                
-               sprintf(reto,"%d",*result_3);
-               
-               //Concatenar parametroMD5 y reto
-               memset(parametroMD5, 0, strlen(parametroMD5));
-               strcpy(parametroMD5, "-s");
-               
-               strcat(parametroMD5,reto);
-               
-               if((hijoId = fork()) < 0){
-                  errorFatal("Error: Fork para MD5 en solicitar gasolina\n");
-               }
-               
-               if(hijoId == 0){
-                  close(pipeSolicitarGasolina[0]);
-                  if((dup2(1,pipeSolicitarGasolina[1])) < 0){
-                     errorFatal("Error: dup en solicitar gasolina\n" );
+               if(*result_2 == 2){
+                  //Solicitar Reto
+                  result_3 = solicitar_reto_1(&solicitar_reto_1_arg, clnt);
+                  if (result_3 == (int *) NULL) {
+                     //escribirArchivoLog
+                     clnt_perror (clnt, "Error en la solicitud del reto");
+                     indiceLista=indiceLista->siguiente;
+                     continue;
                   }
                   
-                  if(execlp("md5","md5", parametroMD5, NULL)){
-                     errorFatal("Error: execlp en solicitar gasolina\n" );
+                  sprintf(reto,"%d",*result_3);
+                  
+                  //Concatenar parametroMD5 y reto
+                  memset(parametroMD5, 0, strlen(parametroMD5));
+                  strcpy(parametroMD5, "-s");
+                  
+                  strcat(parametroMD5,reto);
+                  
+                  if((hijoId = fork()) < 0){
+                     errorFatal("Error: Fork para MD5 en solicitar gasolina\n");
+                  }
+               
+                  if(hijoId == 0){
+                     close(pipeSolicitarGasolina[0]);
+                     if((dup2(1,pipeSolicitarGasolina[1])) < 0){
+                        errorFatal("Error: dup en solicitar gasolina\n" );
+                     }
+                     
+                     if(execlp("md5","md5", parametroMD5, NULL)){
+                        errorFatal("Error: execlp en solicitar gasolina\n" );
+                     }
+                     
+                     exit(0);
                   }
                   
-                  exit(0);
+                  if(hijoId > 0){
+                     wait(&status);
+                     close(pipeSolicitarGasolina[1]);
+                     read(pipeSolicitarGasolina[0],bufferLectura,sizeof(bufferLectura));
+                     tokenIgnorado = strtok(bufferLectura,"=");
+                     clave = strtok(NULL,"=");
+                  }
                }
                
-               if(hijoId > 0){
-                  wait(&status);
-                  close(pipeSolicitarGasolina[1]);
-                  read(pipeSolicitarGasolina[0],bufferLectura,sizeof(bufferLectura));
-                  tokenIgnorado = strtok(bufferLectura,"=");
-                  clave = strtok(NULL,"=");
-               }
+               
                
                strcpy(evaluar_respuesta_1_arg, clave);
                
@@ -617,10 +627,6 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   continue;
                }
                
-               result_2 = solicitar_envio_gasolina_1(&solicitar_envio_gasolina_1_arg, clnt);
-               if (result_2 == (int *) NULL) {
-                  clnt_perror (clnt, "call failed");
-               }
                
                if(*result_2 == 1){
                   strcpy(respuestaSolicitud,"Ok");

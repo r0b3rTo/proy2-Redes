@@ -24,14 +24,32 @@ int *
 solicitar_envio_gasolina_1_svc(char **argp, struct svc_req *rqstp)
 {
    static int  result;
+   char *ip;
+   HistorialTicket ticketBomba;
+   int diferencialTiempo = 0;
+   
    char* nombreArchivoLog = strcat(servidor.nombreCentro,".txt");
+   
+   strcpy(ip,inet_ntoa(rqstp->rq_xprt->xp_raddr.sin_addr));
 
    printf("Entro a la llamada remota del envío de gasolina\n");   
    if(servidor.inventario >= 38000){
-      result = 1;
-      servidor.inventario = servidor.inventario - 38000;
-      escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion, 
-                        servidor.inventario, *argp, "Ok");
+      ticketBomba = buscarTicket(tickets,ip);
+      if(ticketBomba != NULL){
+         diferencialTiempo = servidor.tiempoSimulacion - ticketBomba->tiempoValidacion;
+         if((ticketBomba->tiempoValidacion !=-1) && (diferencialTiempo<=30)){
+            result = 1;
+            servidor.inventario = servidor.inventario - 38000;
+            escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion,
+                               servidor.inventario, *argp, "Ok");
+         }else{
+            //escribirArchivoLog
+            result = 2;
+         }
+      }else{
+         //escribirArchivoLog
+         result = 2;
+      }
    }else{
       result = 0;
       escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion, 
@@ -47,13 +65,15 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
    static int  result;
    char *ip, *reto;
    
+   pid_t hijoId;
+   int status;
+   
    int pipeMD5[2];
    char bufferLectura[256];
    char *tokenIgnorado, *claveMD5;
    char* parametroMD5 = "-s";
    
-   pid_t hijoId;
-   int status;
+   char* nombreArchivoLog = strcat(servidor.nombreCentro,".txt");
    
    srand(time(NULL));
    result = rand();
@@ -64,18 +84,17 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
    strcat(parametroMD5,reto);
    
    if((hijoId = fork()) < 0){
-      errorFatal("Error: Fork para MD5 en obtener tiempos de respuesta\n");
+      errorFatal("Error: Fork para MD5 en solicitud de reto\n");
    }
       
    if(hijoId == 0){
-      printf("Hola soy el hijo :)\n");
       close(pipeMD5[0]);
       if((dup2(1,pipeMD5[1])) < 0){
-         errorFatal("Error: dup en obtener tiempos de respuesta\n" );
+         errorFatal("Error: dup en solicitud de reto\n" );
       }
       
       if(execlp("md5","md5", parametroMD5, NULL)){
-         errorFatal("Error: execlp en obtener tiempos de respuesta\n" );
+         errorFatal("Error: execlp en solicitud de reto\n" );
       }
        
       exit(0);
@@ -91,7 +110,7 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
    }
    
    tickets = insertarTicket(tickets, *argp, ip, claveMD5, -1);
-
+   //escribirArchivoLog
 
    return &result;
 }
@@ -100,10 +119,28 @@ int *
 evaluar_respuesta_1_svc(char **argp, struct svc_req *rqstp)
 {
    static int  result;
-
-	/*
-	 * insert server code here
-	 */
+   char* ip;
+   
+   char* nombreArchivoLog = strcat(servidor.nombreCentro,".txt");
+   
+   HistorialTicket ticketBomba = buscarTicket(tickets, ip);
+   
+   strcpy(ip,inet_ntoa(rqstp->rq_xprt->xp_raddr.sin_addr));
+   
+   if(ticketBomba != NULL){
+      //Verificación de correspondencia de claves
+      if(strcmp(ticketBomba->claveMD5,*argp) == 0){
+         //escribirArchivoLog
+         ticketBomba->tiempoValidacion = servidor.tiempoSimulacion;
+         result = 1;
+      }else{
+         //escribirArchivoLog
+         result = 0;
+      }
+   }else{
+      mensajeError("Error: La Bomba no ha solicitado reto anteriormente\n");
+      result = 0;
+   }
 
    return &result;
 }
