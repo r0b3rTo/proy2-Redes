@@ -25,7 +25,7 @@
 *    Parametro de salida: Una estructura de tipo ListaServidor.
 *    Recibe la listaServidores de la lista e inserta un nuevo Servidor.
 */
-ListaServidor insertarServidor(ListaServidor listaServidores, char* nombre, char* direccion, int puerto, int tiempoRespuesta)
+ListaServidor insertarServidor(ListaServidor listaServidores, char* nombre, char* direccion,int tiempoRespuesta)
 { 
      ListaServidor nuevoServidor = NULL;
      char* auxnombre = (char*)malloc(sizeof(char)*100);
@@ -36,7 +36,6 @@ ListaServidor insertarServidor(ListaServidor listaServidores, char* nombre, char
      if(auxDireccion == NULL){
           terminar("Error de asignacion de memoria: " );
      }
-     int auxPuerto = puerto;
      int auxTiempoRespuesta = tiempoRespuesta;
      strcpy(auxnombre,nombre);
      strcpy(auxDireccion,direccion);
@@ -46,7 +45,6 @@ ListaServidor insertarServidor(ListaServidor listaServidores, char* nombre, char
      }
      nuevoServidor->nombre = auxnombre;   
      nuevoServidor->direccion = auxDireccion;
-     nuevoServidor->puerto = auxPuerto;
      nuevoServidor->tiempoRespuesta = auxTiempoRespuesta;
      nuevoServidor-> siguiente = listaServidores; 
      
@@ -107,7 +105,6 @@ ListaServidor buscarServidor(ListaServidor listaServidores, char* nombre){
           }
           servidorBuscado->nombre = listaServidores->nombre;   
           servidorBuscado->direccion = listaServidores->direccion;
-          servidorBuscado->puerto = listaServidores->puerto;
           servidorBuscado->tiempoRespuesta = listaServidores->tiempoRespuesta;
           return servidorBuscado;
       } 

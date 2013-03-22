@@ -16,7 +16,6 @@
 struct Servidor {
    char* nombre;
    char* direccion;
-   int puerto;
    int tiempoRespuesta;
    struct Servidor *siguiente; 
 };
@@ -24,7 +23,7 @@ struct Servidor {
 typedef struct Servidor SERVIDOR;/*por convencion en mayusculas */
 typedef struct Servidor *ListaServidor;/*Direccion de inicio de la lista */
 
-extern ListaServidor insertarServidor(ListaServidor, char*, char*,int,int);
+extern ListaServidor insertarServidor(ListaServidor, char*, char*,int);
 extern ListaServidor insertarTiempoRespuesta(ListaServidor,char*,int);
 extern ListaServidor buscarServidor(ListaServidor,char*);
 extern ListaServidor ordenarLista(ListaServidor);

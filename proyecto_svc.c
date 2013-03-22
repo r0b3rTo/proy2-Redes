@@ -384,9 +384,9 @@ void * actualizarSimulacion(void *argumento){
    escribirArchivoLog(nombreArchivoLog, "Estado Inicial", 0, servidor->inventario, servidor->nombreCentro, "");
 
    while(servidor->tiempoSimulacion < TIEMPO_SIMULACION){
-      printf("Minuto %d de la simulación. Inventario = %d\n", servidor->tiempoSimulacion, servidor->inventario);
-      usleep(100*1000); //HLM hay que cambiar a 100*1000
-//      pthread_mutex_lock(&mutex_inventario);
+      
+      usleep(100*1000);
+
       if(servidor->inventario == 0){
          // Tanque vacío
          escribirArchivoLog(nombreArchivoLog, "Tanque vacio", servidor->tiempoSimulacion, servidor->inventario, servidor->nombreCentro,"");
@@ -397,7 +397,7 @@ void * actualizarSimulacion(void *argumento){
       if( servidor->capacidadMaxima >= (servidor->inventario + servidor->suministro)){
          servidor->inventario = servidor->inventario + servidor->suministro;
       }
-//      pthread_mutex_unlock(&mutex_inventario);
+      
       servidor->tiempoSimulacion = servidor->tiempoSimulacion + 1;
    }
 
@@ -501,23 +501,11 @@ main (int argc, char **argv)
    inicializarServidor(&servidor);
    manejarParametros(argc, argv, &servidor);
    crearLog(servidor.nombreCentro);
-//   pthread_mutex_init(&mutex_inventario, NULL);
-//   pthread_mutex_init(&mutex_tiempoRespuesta, NULL);
          
    // Crea el hilo que se encargara de actualizar los valores de la simulación.
    if (pthread_create(&hiloActualizador,NULL,actualizarSimulacion,(void *)&servidor) != 0) {
       fprintf(stderr,"No se pudo crear el thread hilo Actualizador: %s\n",strerror(errno));
    }
-
-   // Espera a que el hilo que actualiza los valores de la simulación termine.
-//   if (pthread_join(hiloActualizador,NULL) != 0 ){
-//      fprintf(stderr,"Hubo un problema con la terminación del hilo Actualizador: %s\n",strerror(errno));
-//   }
-
-//   pthread_mutex_destroy(&mutex_inventario);   
-//   pthread_mutex_destroy(&mutex_tiempoRespuesta);   
-   //printf("El programa principal ha terminado con éxito.\n"); //HLM Este flag no es necesario...
-   imprimirServidor(servidor); //HLM Este flag no es necesario...
 
 	svc_run ();
 	fprintf (stderr, "%s", "svc_run returned");

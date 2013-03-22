@@ -38,12 +38,8 @@ solicitar_envio_gasolina_1_svc(char **argp, struct svc_req *rqstp)
    ticketBomba = buscarTicket(tickets,ip);
    if((ticketBomba != NULL) || (ticketBomba->tiempoValidacion !=-1)){
       diferencialTiempo = servidor.tiempoSimulacion - ticketBomba->tiempoValidacion;
-      printf("\nTiempo simulacion: %d\n",servidor.tiempoSimulacion);
-      printf("\ntiempo ticket: %d\n",ticketBomba->tiempoValidacion);
-      printf("\nDiferencial de tiempo simulacion vs tiempo ticket:%d\n",diferencialTiempo);
       if(diferencialTiempo<=30){
          if(servidor.inventario >= 38000){
-            printf("\nSuministro Ok\n");
             result = 1;
             servidor.inventario = servidor.inventario - 38000;
             escribirArchivoLog(nombreArchivoLog, "Verificacion de Estado del Ticket", 
@@ -51,8 +47,9 @@ solicitar_envio_gasolina_1_svc(char **argp, struct svc_req *rqstp)
             escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion,
                               servidor.inventario, *argp, "Ok");
          }else{
-            printf("\nSuministro No Disponible\n");
             result = 0;
+            escribirArchivoLog(nombreArchivoLog, "Verificacion de Estado del Ticket", 
+                              servidor.tiempoSimulacion,servidor.inventario, *argp, "Valido");
             escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion, 
                               servidor.inventario, *argp, "No Disponible");
          }
@@ -68,40 +65,6 @@ solicitar_envio_gasolina_1_svc(char **argp, struct svc_req *rqstp)
                        servidor.tiempoSimulacion,servidor.inventario, *argp, "Inexistente");
       result = 2;
    }
- 
-//    if(servidor.inventario >= 38000){
-//       ticketBomba = buscarTicket(tickets,ip);
-//       if(ticketBomba != NULL){
-//          diferencialTiempo = servidor.tiempoSimulacion - ticketBomba->tiempoValidacion;
-//          printf("\nTiempo simulacion: %d\n",servidor.tiempoSimulacion);
-//          printf("\ntiempo ticket: %d\n",ticketBomba->tiempoValidacion);
-//          printf("\nDiferencial de tiempo simulacion vs tiempo ticket:%d\n",diferencialTiempo);
-//          if((ticketBomba->tiempoValidacion !=-1) && (diferencialTiempo<=30)){
-//             printf("\nSuministro Ok\n");
-//             result = 1;
-//             servidor.inventario = servidor.inventario - 38000;
-//             escribirArchivoLog(nombreArchivoLog, "EstadoTicket", servidor.tiempoSimulacion,
-//                               servidor.inventario, *argp, "Valido");
-//             escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion,
-//                                servidor.inventario, *argp, "Ok");
-//          }else{
-//             escribirArchivoLog
-//             escribirArchivoLog(nombreArchivoLog, "EstadoTicket", servidor.tiempoSimulacion,
-//                               servidor.inventario, *argp, "Vencido");
-//             result = 2;
-//          }
-//       }else{
-//          escribirArchivoLog
-//          escribirArchivoLog(nombreArchivoLog, "EstadoTicket", servidor.tiempoSimulacion,
-//                            servidor.inventario, *argp, "Inexistente");
-//          result = 2;
-//       }
-//    }else{
-//       printf("\nSuministro No Disponible\n");
-//       result = 0;
-//       escribirArchivoLog(nombreArchivoLog, "Suministro", servidor.tiempoSimulacion, 
-//                         servidor.inventario, *argp, "No Disponible");
-//    }
 
    return &result;
 }
@@ -114,7 +77,7 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
    pid_t hijoId;
    int status;
    
-   char bufferLectura[256];
+   char bufferLectura[512];
    char* parametro = "-s";
    
    char* tokenIgnorado = (char*)malloc(sizeof(char)*100);
@@ -148,6 +111,8 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
    if((pipe(pipeMD5)) < 0){
       errorFatal("Error: Creación de pipe para MD5 en solicitud de reto\n");
    }
+   
+   memset(bufferLectura, 0, sizeof(bufferLectura));
    
    srand(time(NULL));
    result = rand();
@@ -183,14 +148,19 @@ solicitar_reto_1_svc(char **argp, struct svc_req *rqstp)
       read(pipeMD5[0],bufferLectura,sizeof(bufferLectura));
       tokenIgnorado = strtok(bufferLectura,"=");
       claveMD5 = strtok(NULL,"=");
-      printf("Clave: %s\n", claveMD5);
    }
    
-   tickets = insertarTicket(tickets, *argp, ip, claveMD5, -1);
-   //escribirArchivoLog		CASO Se incluye un nuevo ticket
+   HistorialTicket ticketBombaCreado = buscarTicket(tickets, ip);
+   if(ticketBombaCreado != NULL){
+      ticketBombaCreado->claveMD5 = claveMD5;
+      ticketBombaCreado->tiempoValidacion = -1;
+   }else{
+      tickets = insertarTicket(tickets, *argp, ip, claveMD5, -1);
+   }
+   //escribirArchivoLog    CASO Se incluye un nuevo ticket
    escribirArchivoLog(nombreArchivoLog, "Nuevo Ticket", servidor.tiempoSimulacion,
-                     servidor.inventario, *argp, "Agregado");
-
+                  servidor.inventario, *argp, "Agregado");
+   
    return &result;
 }
 
@@ -208,25 +178,17 @@ evaluar_respuesta_1_svc(char **argp, struct svc_req *rqstp)
    
    strcpy(ip,inet_ntoa(rqstp->rq_xprt->xp_raddr.sin_addr));
    
-   printf("\nBuscando Ticket...\n");  
-   HistorialTicket ticketBomba = buscarTicket(tickets, ip);
-   printf("\nTicket Nombre Bomba...%s\n",ticketBomba->nombreBomba);
-   printf("\nTicket clave MD5...%s\n",ticketBomba->claveMD5);
-   printf("\nArgp...%s\n",*argp);
-   
+   HistorialTicket ticketBomba = buscarTicket(tickets, ip); 
    
    if(ticketBomba != NULL){
-      printf("\nTicket encontrado...\n"); 
       //Verificación de correspondencia de claves
       if(strcmp(ticketBomba->claveMD5,*argp) == 0){
          //escribirArchivoLog		CASO Autenticación exitosa
          escribirArchivoLog(nombreArchivoLog, "Autenticacion", servidor.tiempoSimulacion,
                            servidor.inventario, ip, "Exitosa");
-         printf("\nAutenticacion valida...\n"); 
          ticketBomba->tiempoValidacion = servidor.tiempoSimulacion;
          result = 1;
       }else{
-         printf("\nAutenticacion fallida...\n"); 
          //escribirArchivoLog		CASO Autenticación fallida
          escribirArchivoLog(nombreArchivoLog, "Autenticacion", servidor.tiempoSimulacion,
                            servidor.inventario, ip, "Fallida");

@@ -39,13 +39,10 @@ ListaServidor obtenerCentros(ListaServidor listaCentros, FILE *archivoServidores
       nombreServidor = strtok(servidorInfo,"&");
       
       //Obtiene la direccion del Centro
-      direccionServidor = strtok(NULL,"&");
-      
-      //Obtiene el puerto que corresponde al Centro
-      puertoServidor = atoi(strtok(NULL,"&\n"));
+      direccionServidor = strtok(NULL,"&\n");
       
       //Inserta en la lista de Centros el Centro obtenido con tiempo de respuesta igual a -1
-      listaCentros = insertarServidor(listaCentros,nombreServidor,direccionServidor,puertoServidor,-1);
+      listaCentros = insertarServidor(listaCentros,nombreServidor,direccionServidor,-1);
    }
    
    return listaCentros;
@@ -109,6 +106,24 @@ void escribirArchivoLog(char* nombreArchivoLog, char* mensaje, int tiempoActual,
       strcat(nuevaEntrada, nombreCentro);
       strcat(nuevaEntrada, ", ");
       strcat(nuevaEntrada, resultadoPeticion);
+   }else if(strcmp(mensaje, "Evaluación del Desafío") == 0){
+      strcat(nuevaEntrada, "Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, resultadoPeticion);     
+   }else if(strcmp(mensaje, "Solicitud del Desafío") == 0){
+      strcat(nuevaEntrada, "Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, resultadoPeticion);
+   }else if(strcmp(mensaje, "Solicitud de Tiempo de Respuesta") == 0){      
+      strcat(nuevaEntrada, "Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, resultadoPeticion);
    }else{
       strcat(nuevaEntrada, "Minuto ");
       sprintf(bufferTiempo,"%d",tiempoActual);
@@ -118,7 +133,8 @@ void escribirArchivoLog(char* nombreArchivoLog, char* mensaje, int tiempoActual,
       strcat(nuevaEntrada, bufferInventario);
       strcat(nuevaEntrada, " litros");
    }
-   strcat(nuevaEntrada,"\n");
+   
+   strcat(nuevaEntrada,"\n");   
    
    //Escribo en el archivo de log de la Bomba
    if(fwrite(nuevaEntrada, sizeof(char), strlen(nuevaEntrada), archivoLog) < strlen(nuevaEntrada)){
@@ -430,38 +446,15 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    pid_t hijoId;
    int status;
    
-   char bufferLectura[256];
+   char bufferLectura[512];
    char *parametro = "-s";
    
-   char* tokenIgnorado = (char*)malloc(sizeof(char)*100);
-   if(tokenIgnorado == NULL){
-      terminar("Error de asignacion de memoria: " );
-   }
-   
-   char* clave = (char*)malloc(sizeof(char)*100);
-   if(clave == NULL){
-      terminar("Error de asignacion de memoria: " );
-   }
-   
-   char* reto = (char*)malloc(sizeof(char)*100);
-   if(reto == NULL){
-      terminar("Error de asignacion de memoria: " );
-   }
-   
-   char* parametroMD5 = (char*)malloc(sizeof(char)*100);
-   if(parametroMD5 == NULL){
-      terminar("Error de asignacion de memoria: " );
-   }
+   char* tokenIgnorado;
+   char* clave;
+   char* reto;
+   char* parametroMD5;
    
    int pipeTiempoRespuesta[2], pipeSolicitarGasolina[2];
-   
-   if((pipe(pipeTiempoRespuesta)) < 0){
-      errorFatal("Error: Creación de pipe para obtener tiempos de respuesta\n");
-   }
-   
-   if((pipe(pipeSolicitarGasolina)) < 0){
-      errorFatal("Error: Creación de pipe para solicitud de gasolina\n");
-   }
 
    ListaServidor indiceLista = (SERVIDOR*)malloc(sizeof(SERVIDOR)); 
    if(indiceLista == NULL){
@@ -478,16 +471,47 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          continue;
       }
       
+      tokenIgnorado = (char*)malloc(sizeof(char)*100);
+      if(tokenIgnorado == NULL){
+         terminar("Error de asignacion de memoria: " );
+      }
+   
+      clave = (char*)malloc(sizeof(char)*100);
+      if(clave == NULL){
+         terminar("Error de asignacion de memoria: " );
+      }
+         
+      reto = (char*)malloc(sizeof(char)*100);
+      if(reto == NULL){
+         terminar("Error de asignacion de memoria: " );
+      }
+         
+      parametroMD5 = (char*)malloc(sizeof(char)*100);
+      if(parametroMD5 == NULL){
+         terminar("Error de asignacion de memoria: " );
+      }
+      
+      if((pipe(pipeTiempoRespuesta)) < 0){
+         errorFatal("Error: Creación de pipe para obtener tiempos de respuesta\n");
+      }
+      
+      memset(bufferLectura, 0, sizeof(bufferLectura));
+      
       //Validación con MD5
       
       //Solicitar Reto
       result_3 = solicitar_reto_1(&solicitar_reto_1_arg, clnt);
+      escribirArchivoLog(nombreArchivo,"Solicitud del Desafío", minuto, 0,"",
+                         "Solicitud de Desafío Enviada");
       if (result_3 == (int *) NULL) {
-         //escribirArchivoLog
+         escribirArchivoLog(nombreArchivo,"Solicitud del Desafío", minuto,0, "",
+                            "Error al solicitar el desafío");
          clnt_perror (clnt, "Error en la solicitud del reto");
          indiceLista=indiceLista->siguiente;
          continue;
       }
+      escribirArchivoLog(nombreArchivo,"Solicitud del Desafío", minuto, 0,"",
+                         "Desafío Recibido");
       
       sprintf(reto,"%d",*result_3);
       
@@ -519,34 +543,40 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          read(pipeTiempoRespuesta[0],bufferLectura,sizeof(bufferLectura));
          tokenIgnorado = strtok(bufferLectura,"=");
          clave = strtok(NULL,"=");
-         printf("Clave: %s\n", clave);
       }
       
       //Evaluar reto
       result_4 = evaluar_respuesta_1(&clave, clnt);
       if (result_4 == (int *) NULL) {
-         //escribirArchivoLog
+         escribirArchivoLog(nombreArchivo,"Evaluación del Desafío", minuto, 0,"",
+                            "Error al evaluar");
          clnt_perror (clnt, "Error en la evaluación del desafio");
          indiceLista=indiceLista->siguiente;
          continue;
       }
       
       if(*result_4 == 1){
-         //escribirArchivoLog
+         escribirArchivoLog(nombreArchivo,"Evaluación del Desafío", minuto, 0,"",
+                            "Evaluación Correcta");
       } else{
-         //escribirArchivoLog
+         escribirArchivoLog(nombreArchivo,"Evaluación del Desafío", minuto, 0,"",
+                            "Evaluación Incorrecta");
          indiceLista=indiceLista->siguiente;
          continue;
       }
 
       result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
+      escribirArchivoLog(nombreArchivo,"Solicitud de Tiempo de Respuesta", minuto, 0, "",
+                        "Solicitud de Tiempo de Respuesta Enviada");
       if (result_1 == (int *) NULL) {
-         //escribirArchivoLog
+         escribirArchivoLog(nombreArchivo,"Solicitud de Tiempo de Respuesta", minuto, 0,
+                           "", "Error al solicitar Tiempo de Respuesta");
          clnt_perror (clnt, "Error en obtener tiempo respuesta");
          indiceLista=indiceLista->siguiente;
          continue;
       } else {
-         //escribirArchivoLog
+         escribirArchivoLog(nombreArchivo,"Solicitud de Tiempo de Respuesta", minuto, 0,
+                           "", "Solicitud de Tiempo de Respuesta Recibida");
          indiceLista->tiempoRespuesta = *result_1;
       }
       
@@ -576,6 +606,32 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   exit (1);
                }
                
+               tokenIgnorado = (char*)malloc(sizeof(char)*100);
+               if(tokenIgnorado == NULL){
+                  terminar("Error de asignacion de memoria: " );
+               }
+               
+               clave = (char*)malloc(sizeof(char)*100);
+               if(clave == NULL){
+                  terminar("Error de asignacion de memoria: " );
+               }
+               
+               reto = (char*)malloc(sizeof(char)*100);
+               if(reto == NULL){
+                  terminar("Error de asignacion de memoria: " );
+               }
+               
+               parametroMD5 = (char*)malloc(sizeof(char)*100);
+               if(parametroMD5 == NULL){
+                  terminar("Error de asignacion de memoria: " );
+               }
+               
+               if((pipe(pipeSolicitarGasolina)) < 0){
+                  errorFatal("Error: Creación de pipe para solicitud de gasolina\n");
+               }
+               
+               memset(bufferLectura, 0, sizeof(bufferLectura));
+               
                result_2 = solicitar_envio_gasolina_1(&solicitar_envio_gasolina_1_arg, clnt);
                if (result_2 == (int *) NULL) {
                   clnt_perror (clnt, "Error en la solicitud de gasolina");
@@ -586,19 +642,22 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                if(*result_2 == 2){
                   //Solicitar Reto
                   result_3 = solicitar_reto_1(&solicitar_reto_1_arg, clnt);
+                   escribirArchivoLog(nombreArchivo,"Solicitud del Desafío", minuto, bomba.inventario,
+                                    "", "Solicitud de Desafío Enviada");
                   if (result_3 == (int *) NULL) {
-                     //escribirArchivoLog
+                     escribirArchivoLog(nombreArchivo,"Solicitud del Desafío", minuto, bomba.inventario,
+                                      "", "Error al solicitar el desafío");
                      clnt_perror (clnt, "Error en la solicitud del reto");
                      indiceLista=indiceLista->siguiente;
                      continue;
                   }
+                  escribirArchivoLog(nombreArchivo,"Solicitud del Desafío", minuto, bomba.inventario,
+                                     "", "Desafío Recibido");
                   
                   sprintf(reto,"%d",*result_3);
                   
                   //Concatenar parametroMD5 y reto
-//                   memset(parametroMD5, 0, strlen(parametroMD5));
                   strcpy(parametroMD5, parametro);
-                  
                   strcat(parametroMD5,reto);
                   
                   if((hijoId = fork()) < 0){
@@ -627,21 +686,22 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                      clave = strtok(NULL,"=");
                   }
                   
-                  strcpy(evaluar_respuesta_1_arg, clave);
-                  
                   //Evaluar reto
-                  result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
+                  result_4 = evaluar_respuesta_1(&clave, clnt);
                   if (result_4 == (int *) NULL) {
-                     //escribirArchivoLog
+                     escribirArchivoLog(nombreArchivo,"Evaluación del Desafío", minuto, 0,
+                                       "", "Error al evaluar");
                      clnt_perror (clnt, "Error: Fallo en la evaluación del desafio");
                      indiceLista=indiceLista->siguiente;
                      continue;
                   }
                   
                   if(*result_4 == 1){
-                     //escribirArchivoLog
+                     escribirArchivoLog(nombreArchivo,"Evaluación del Desafío", minuto, 0,
+                                      "", "Evaluación Correcta");
                   } else{
-                     //escribirArchivoLog
+                     escribirArchivoLog(nombreArchivo,"Evaluación del Desafío", minuto, 0,
+                                      "", "Evaluación Incorrecta");
                      indiceLista=indiceLista->siguiente;
                      continue;
                   }
@@ -662,7 +722,8 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                
                clnt_destroy (clnt);
                
-               escribirArchivoLog(nombreArchivo,"Peticion", minuto, 0, indiceLista->nombre, respuestaSolicitud);
+               escribirArchivoLog(nombreArchivo,"Peticion", minuto, 0, indiceLista->nombre, 
+                                  respuestaSolicitud);
                
                if(strcmp(respuestaSolicitud,"Ok") == 0){
                   solicitudAceptada = 1;
