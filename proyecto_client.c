@@ -433,7 +433,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    pid_t hijoId;
    int status;
    int pipeTiempoRespuesta[2], pipeSolicitarGasolina[2];
-   char* parametro = "-s", parametroMD5;
+   char *parametro = "-s", *parametroMD5;
    
    if((pipe(pipeTiempoRespuesta)) < 0){
       errorFatal("Error: Creación de pipe para obtener tiempos de respuesta\n");
