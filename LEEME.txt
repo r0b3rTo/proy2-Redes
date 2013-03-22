@@ -1,0 +1,122 @@
+Archivo LEEME
+
+* Integrantes:
+Héctor López 05-38421
+Roberto Omaña 06-39990
+
+* Archivos que componen el Proyecto 2
+- proyecto.h
+   Archivo generado por rpcgen con las firmas de las funciones remotas.
+- proyecto.x
+   Archivo con el catálogo de las funciones remotas. A partir de este archivo se generan los 
+   archivos talones del servidor y el cliente con el comando rpcgen.
+- proyecto_client.c
+   Archivo con el código fuente del programa bomba.
+- proyecto_clnt.c
+   Archivo talón del cliente generado con el comando rpcgen.
+- proyecto_server.c
+   Archivo con el código fuente de las funciones remotas.
+- proyecto_svc.c
+   Archivo talón del servidor generado con el comando rpcgen. Este archivo fue modificado para 
+   incluir el código fuente del programa centro.
+- bomba.h
+   Includes y definición de estructuras para el programa bomba.
+- centro.h
+   Includes y definición de estructuras para el programa centro.
+- errors.h
+   Contiene la definición de los diferentes elementos para el manejo de errores de los programas
+   bomba y centro.
+- errors.c
+   Contiene funciones para el manejo de errores de los programas bomba y centro.
+- ListaServidor.c
+   Contiene funciones para el manejo de una lista enlazada de
+   Servidores, con su nombre, direccion, puerto y tiempo de respuesta.
+- ListaServidor.h
+   Contiene la definición de la estructura de ListaServidor, y cada uno de sus elementos.
+- global.h
+   Archivo con los tipos utilizados por el algoritmo MD5 proveído.
+- md5.h
+   Archivo con la definición de la estructura MD5_CTX y las firmas de algunas funciones utilizadas 
+   en el algoritmo MD5 proveído.
+- mddriver.c
+   Archivo que forma parte del algoritmo MD5 proveído.
+- makefile
+   Contiene los distintos elementos necesarios para gestionar la compilación de los archivos.
+
+
+* ¿Qué hace el programa?
+PDVSA desea mejorar el sistema de distribución de gasolina que desarrollado en el primer proyecto
+con una nueva implementación del prototipo desarrollada en lenguaje C y empleando el paradigma de 
+programación RPC.
+
+El prototipo del sistema tendrá bombas de gasolina(programa bomba) y centros de distribución 
+de combustible(programa centro). Las bombas pedirán a los centros de distribución gandolas de 
+combustible para reponer sus inventarios.
+
+
+* ¿Cómo se ejecuta?
+- Programa bomba
+Uso: ./bomba -n nombreBomba -cp capacidadMaxima -i inventario -c consumo -fc ficheroCentros           
+Inicialización del programa bomba
+   -n,   indica el nombre de la bomba (cadena de caracteres sin espacios)
+   -cp,  capacidad máxima en litros (entero entre 38000 y 380000)
+   -i,   inventario actual (entero entre 0 y capacidad máxima)
+   -c,   consumo promedio en litros por minuto (entero entre 0 y 1000)
+   -fc,  nombre del archivo que contiene los datos de los centros de distribución
+
+NOTA: el orden en los parámetros no es restrictivo.
+
+- Programa centro
+Uso: ./centro -n nombreCentro -cp capacidadMaxima -i inventario -t tiempo -s suministro 
+Inicialización del programa centro
+   -n,   indica el nombre del centro de distribución (cadena de caracteres sin espacios)
+   -cp,  capacidad máxima en litros (entero entre 38000 y 3800000)
+   -i,   inventario actual (entero entre 0 y capacidad máxima)
+   -t,   tiempo de respuesta en minutos (entero entre 0 y 180)
+   -s,   suministro promedio en litros por minuto (entero entre 0 y 10000)
+
+NOTA: el orden en los parámetros no es restrictivo.
+
+
+* Resumen de la estructura
+- Cliente
+   *proyecto_client.c
+      Soportado por:
+      	 proyecto_clnt.c
+         proyecto_server.c         
+         bomba.h
+         ListaServidor.h
+         mddriver.c
+         global.h
+         md5.h         
+         errors.h
+
+- Servidor
+   *proyecto_svc.c
+      Soportado por:		 
+         proyecto_server.c         
+         centro.h
+         errors.h
+
+- Estructura auxiliar
+   *ListaServidor.c
+      Soportada por:
+         ListaServidor.h
+         errors.h
+
+
+* Tipo de aplicación
+Es de tipo distribuida debido a que posee distintos componentes que se ejecutan en entornos 
+separados, normalmente en diferentes plataformas conectadas a través de una red. Un ejemplo 
+de una aplicación distribuida es justamente una que utiliza el paradigma de llamada de 
+procedimientos remotos RPC, del inglés Remote Procedure Call.
+
+
+* Condiciones particulares
+- La invocación de los programas bomba y centro tienen la siguiente restricción: 
+Se debe indicar el modificador -cp con su valor correspondiente antes del modificador
+-i y su valor de inicialización. Sin embargo, en caso de que dicha restricción no se cumpla, 
+el programa le indicará a través de un mensaje al usuario la manera correcta de su invocación.
+
+Esto fue hecho con el fin de mejorar la eficiencia, ya que se verifica la veracidad del valor del
+modificador -i antes de guardarlo en las estructuras correspondientes.
