@@ -406,84 +406,6 @@ int predecirLlamadoCentro(Bomba* bomba, int minutoActual, int tiempoMinimoRespue
    return minutoPrediccion;
 }
 
-/* gestionarEnvioGasolina
- * Descripción: Función encargado de gestionar las solicitudes de gasolina
- * a los distintos centros.
- * Parámetro de entrada: 
- * listaCentros: apuntador a la estructura de tipo ListaServidor que contiene
- * los datos de los distintos centros de distribución.
- * bomba: apuntador a la estructura Bomba.
- * descriptorSocket: identificador del socket perteneciente a la Bomba.
-*/
-int gestionarEnvioGasolina(ListaServidor listaCentros, Bomba* bomba, int minutoActual, char* nombreArchivo){
-   
-   CLIENT *clnt;
-   int  *result_1;
-   char *obtener_tiempo_respuesta_1_arg;
-   int  *result_2;
-   char *solicitar_envio_gasolina_1_arg;
-   
-   int solicitudAceptada = 0;
-   char respuestaSolicitud[100];
-   int tiempoEsperaCarga;
-   
-   ListaServidor copiaListaCentros = (SERVIDOR*)malloc(sizeof(SERVIDOR));
-   if(copiaListaCentros == NULL){
-      terminar("Error de asignacion de memoria: " );
-   }
-   copiaListaCentros = listaCentros;
-      
-   while(copiaListaCentros != NULL){
-      
-      if(copiaListaCentros->tiempoRespuesta != -1){
-         
-         #ifndef  DEBUG
-         clnt = clnt_create (copiaListaCentros->direccion, PROY2, PROYECTO2_1, "tcp");
-         if (clnt == NULL) {
-            clnt_pcreateerror (copiaListaCentros->direccion);
-            exit (1);
-         }
-         #endif   /* DEBUG */
-         
-         result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
-         if (result_2 == (int *) NULL) {
-            clnt_perror (clnt, "call failed");
-         }
-         
-         if(*result_2 == 1){
-            strcpy(respuestaSolicitud,"Ok");
-         } else {
-            strcpy(respuestaSolicitud,"Negada");
-         }
-         
-         #ifndef  DEBUG
-         clnt_destroy (clnt);
-         #endif    /* DEBUG */
-         
-         escribirArchivoLog(nombreArchivo,"Peticion", minutoActual, 0, copiaListaCentros->nombre, respuestaSolicitud);
-         
-         if(strcmp(respuestaSolicitud,"Ok") == 0){
-            solicitudAceptada = 1;
-            tiempoEsperaCarga = copiaListaCentros->tiempoRespuesta;
-            break;
-         }
-         
-      }
-         
-      copiaListaCentros = copiaListaCentros->siguiente;
-   }
-   
-   //Al haber una solicitud aceptada, se espera y se recibe la carga.
-   if(solicitudAceptada){
-      usleep(tiempoEsperaCarga*100000);
-      recibirGasolina(bomba,CARGA_GANDOLA);
-      minutoActual = minutoActual + tiempoEsperaCarga;
-      escribirArchivoLog(nombreArchivo,"Llegada de la gandola", minutoActual, bomba->inventario, "", "");
-   }
-   
-   return minutoActual;
-}
-
 
 void
 proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
@@ -492,11 +414,11 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    int  *result_1;
    char *obtener_tiempo_respuesta_1_arg;
    int  *result_2;
-   char * solicitar_envio_gasolina_1_arg;
+   char *solicitar_envio_gasolina_1_arg = bomba.nombreBomba;
    int  *result_3;
-   char *solicitar_reto_1_arg;
+   char *solicitar_reto_1_arg = bomba.nombreBomba;
    int  *result_4;
-   char * evaluar_respuesta_1_arg;
+   char *evaluar_respuesta_1_arg;
    
    int minuto = 0, minutoSolicitudGasolina = 0;
    int tiempoMinimoRespuesta = 0;
@@ -506,7 +428,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    int tiempoEsperaCarga;
    
    char bufferLectura[256];
-   char *tokenIgnorado, *clave;
+   char *tokenIgnorado, *clave, *reto;
    
    pid_t hijoId;
    int status;
@@ -524,8 +446,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
    indiceLista = listaCentros;
    
    while(indiceLista != NULL){
-      
-      
+        
       clnt = clnt_create (indiceLista->direccion, PROY2, PROYECTO2_1, "tcp");
       if (clnt == NULL) {
          clnt_pcreateerror (indiceLista->direccion);
@@ -538,11 +459,19 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
       //Solicitar Reto
       result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
       if (result_3 == (int *) NULL) {
-         clnt_perror (clnt, "call failed");
+         //escribirArchivoLog
+         clnt_perror (clnt, "Error en la solicitud del reto");
+         indiceLista=indiceLista->siguiente;
+         continue;
       }
+         
+      sprintf(reto,"%d",*result_3);
       
       //Concatenar parametroMD5 y reto
-      //strcat(parametroMD5, bomba.nombreBomba);
+      memset(parametroMD5, 0, strlen(parametroMD5));
+      strcpy(parametroMD5, "-s");
+      
+      strcat(parametroMD5,reto);
       
       if((hijoId = fork()) < 0){
          errorFatal("Error: Fork para MD5 en obtener tiempos de respuesta\n");
@@ -571,22 +500,37 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
          printf("Clave: %s\n", clave);
       }
       
+      strcpy(evaluar_respuesta_1_arg, clave);
+      
       //Evaluar reto
       result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
       if (result_4 == (int *) NULL) {
-         clnt_perror (clnt, "call failed");
+         //escribirArchivoLog
+         clnt_perror (clnt, "Error: Fallo en la evaluación del desafio");
+         indiceLista=indiceLista->siguiente;
+         continue;
+      }
+      
+      if(*result_4 == 0){
+         //escribirArchivoLog
+      } else{
+         //escribirArchivoLog
+         indiceLista=indiceLista->siguiente;
+         continue;
       }
 
       result_1 = obtener_tiempo_respuesta_1((void*)&obtener_tiempo_respuesta_1_arg, clnt);
       if (result_1 == (int *) NULL) {
-         clnt_perror (clnt, "Conexión fallida al Centro");
+         //escribirArchivoLog
+         clnt_perror (clnt, "Error: Conexión fallida al Centro");
+         indiceLista=indiceLista->siguiente;
+         continue;
       } else {
+         //escribirArchivoLog
          indiceLista->tiempoRespuesta = *result_1;
       }
       
-      #ifndef	DEBUG
       clnt_destroy (clnt);
-      #endif	 /* DEBUG */
       
       indiceLista = indiceLista->siguiente;
    }
@@ -606,25 +550,28 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
             
             if(indiceLista->tiempoRespuesta != -1){
                
-               #ifndef  DEBUG
                clnt = clnt_create (indiceLista->direccion, PROY2, PROYECTO2_1, "tcp");
                if (clnt == NULL) {
                   clnt_pcreateerror (indiceLista->direccion);
                   exit (1);
                }
-               #endif   /* DEBUG */
                
-               //Validación con MD5
+               //Solicitar Reto
+               result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
+               if (result_3 == (int *) NULL) {
+                  //escribirArchivoLog
+                  clnt_perror (clnt, "Error en la solicitud del reto");
+                  indiceLista=indiceLista->siguiente;
+                  continue;
+               }
                
+               sprintf(reto,"%d",*result_3);
+               
+               //Concatenar parametroMD5 y reto
                memset(parametroMD5, 0, strlen(parametroMD5));
                strcpy(parametroMD5, "-s");
                
-               result_3 = solicitar_reto_1((void*)&solicitar_reto_1_arg, clnt);
-               if (result_3 == (int *) NULL) {
-                  clnt_perror (clnt, "call failed");
-               }
-               
-               //Concatenar parametroMD5 y reto
+               strcat(parametroMD5,reto);
                
                if((hijoId = fork()) < 0){
                   errorFatal("Error: Fork para MD5 en solicitar gasolina\n");
@@ -654,7 +601,18 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                //Evaluar reto
                result_4 = evaluar_respuesta_1(&evaluar_respuesta_1_arg, clnt);
                if (result_4 == (int *) NULL) {
-                  clnt_perror (clnt, "call failed");
+                  //escribirArchivoLog
+                  clnt_perror (clnt, "Error: Fallo en la evaluación del desafio");
+                  indiceLista=indiceLista->siguiente;
+                  continue;
+               }
+               
+               if(*result_4 == 1){
+                  //escribirArchivoLog
+               } else{
+                  //escribirArchivoLog
+                  indiceLista=indiceLista->siguiente;
+                  continue;
                }
                
                result_2 = solicitar_envio_gasolina_1((void*)&solicitar_envio_gasolina_1_arg, clnt);
@@ -668,9 +626,7 @@ proy2_1(Bomba bomba, char *nombreArchivo, ListaServidor listaCentros)
                   strcpy(respuestaSolicitud,"Negada");
                }
                
-               #ifndef  DEBUG
                clnt_destroy (clnt);
-               #endif    /* DEBUG */
                
                escribirArchivoLog(nombreArchivo,"Peticion", minuto, 0, indiceLista->nombre, respuestaSolicitud);
                

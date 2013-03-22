@@ -26,6 +26,9 @@
 //Include sobre el manejo de errores
 #include "errors.h"
 
+//Include sobre el manejo del Historial de Tickets
+#include "HistorialTicket.h"
+
 //Definición de constantes
 #define PROGRAM_NAME "centro"
 #define TAMANIO_COLA 5

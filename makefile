@@ -8,8 +8,8 @@ SERVER = centro
 
 SOURCES_CLNT.c =  ListaServidor.c
 SOURCES_CLNT.h = bomba.h ListaServidor.h
-SOURCES_SVC.c =
-SOURCES_SVC.h = centro.h
+SOURCES_SVC.c = HistorialTicket.c
+SOURCES_SVC.h = centro.h HistorialTicket.h
 SOURCES.x = proyecto.x
 SOURCES.c = errors.c
 SOURCES.h = errors.h
