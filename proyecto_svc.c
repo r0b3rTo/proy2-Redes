@@ -333,7 +333,31 @@ void escribirArchivoLog(char* nombreArchivoLog, char* mensaje, int tiempoActual,
       strcat(nuevaEntrada, ", ");
       sprintf(bufferInventario, "%d", inventario);
       strcat(nuevaEntrada, bufferInventario);
-   }
+   }else if(strcmp(mensaje, "EstadoTicket") == 0){
+      strcat(nuevaEntrada, "Verificación Ticket: Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, nombreBomba);
+      strcat(nuevaEntrada, ", Ticket ");
+      strcat(nuevaEntrada, resultadoPeticion);		
+	}else if(strcmp(mensaje, "TicketNuevo") == 0){
+		strcat(nuevaEntrada, "Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);
+      strcat(nuevaEntrada, bufferTiempo);
+      strcat(nuevaEntrada, ", ");
+      strcat(nuevaEntrada, nombreBomba);
+      strcat(nuevaEntrada, ", Ticket ");
+      strcat(nuevaEntrada, resultadoPeticion);		
+	}else if(strcmp(mensaje, "Autenticacion") == 0){
+		strcat(nuevaEntrada, "Autenticacion Bomba: ");
+		strcat(nuevaEntrada, nombreBomba);		
+		strcat(nuevaEntrada, " ");      
+      strcat(nuevaEntrada, resultadoPeticion);		      
+		strcat(nuevaEntrada, ". Minuto ");
+      sprintf(bufferTiempo,"%d",tiempoActual);      
+      strcat(nuevaEntrada, bufferTiempo);            
+	}
    strcat(nuevaEntrada,"\n");
       
    if(fwrite(nuevaEntrada, sizeof(char), strlen(nuevaEntrada), archivoLog) < strlen(nuevaEntrada)){
@@ -387,6 +411,7 @@ proy2_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
 		char *solicitar_envio_gasolina_1_arg;
+		char *solicitar_reto_1_svc;
 		char *evaluar_respuesta_1_arg;
 	} argument;
 	char *result;
